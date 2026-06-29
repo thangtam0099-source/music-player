@@ -26,12 +26,21 @@ if (fs.existsSync(uploadsDir)) {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session
+// Session — file store thay MemoryStore để tránh warning & mất session khi restart
+const FileStore = require('session-file-store')(session);
+const sessionDir = path.join(__dirname, 'sessions');
+if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir);
+
 app.use(session({
+  store: new FileStore({
+    path:         sessionDir,
+    ttl:          7 * 24 * 60 * 60, // 7 ngày (giây)
+    reapInterval: 3600               // Dọn session hết hạn mỗi 1 giờ
+  }),
   secret:            process.env.SESSION_SECRET || 'music-player-fallback-secret',
   resave:            false,
   saveUninitialized: false,
-  cookie:            { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 ngày
+  cookie:            { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 ngày (ms)
 }));
 
 // Khởi tạo DB
