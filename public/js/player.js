@@ -81,7 +81,22 @@ function togglePlay() {
 }
 
 function updatePlayIcon() {
+  // 1. Cập nhật icon ở thanh Player dưới đáy
   playIcon.innerHTML = isPlaying ? ICON_PAUSE : ICON_PLAY;
+
+  // 2. Cập nhật icon trên danh sách bài hát
+  // Đưa toàn bộ icon trên danh sách về trạng thái Play (tam giác)
+  document.querySelectorAll('.song-play-icon svg').forEach(svg => {
+    svg.innerHTML = ICON_PLAY;
+  });
+
+  // 3. Nếu đang phát nhạc, tìm bài hát đang "active" và đổi thành Pause (2 vạch)
+  if (isPlaying) {
+    const activeSongIcon = document.querySelector('.song-card.active .song-play-icon svg');
+    if (activeSongIcon) {
+      activeSongIcon.innerHTML = ICON_PAUSE;
+    }
+  }
 }
 
 // ── Bài trước / Bài sau ────────────────────────
