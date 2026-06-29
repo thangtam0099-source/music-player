@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Music Player</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .upload-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .upload-form input[type=file] { font-size: 0.82rem; color: var(--gray); }
+    .current-file {
+      font-size: 0.78rem; color: var(--gray);
+      background: var(--bg3); padding: 4px 10px;
+      border-radius: 6px; margin-top: 6px; display: inline-block;
+    }
+    /* Mở rộng max-width modal cho admin (form thêm nhạc) */
+    #songFormModal .modal { max-width: 600px; }
+  </style>
+</head>
+<body>
+
+<div class="admin-layout">
+
+<!-- ══ SIDEBAR ══════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <% if (settings.logo) { %>
+      <img src="<%= settings.logo %>" alt="Logo">
+    <% } else { %>
+      <span style="font-size:1.6rem">🎵</span>
+    <% } %>
+    <span>Music Admin</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Quản lý</div>
+
+    <a href="/admin" class="nav-link <%= page === 'dashboard' ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Dashboard
+    </a>
+
+    <a href="/admin/songs" class="nav-link <%= page === 'songs' ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      Quản lý nhạc
+    </a>
+
+    <a href="/admin/settings" class="nav-link <%= page === 'settings' ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      Cài đặt giao diện
+    </a>
+
+    <div class="nav-label" style="margin-top:12px">Tài khoản</div>
+
+    <a href="/" class="nav-link" target="_blank">
+      <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      Xem trang Guest
+    </a>
+
+    <a href="/logout" class="nav-link" style="color:#fc8181">
+      <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      Đăng xuất
+    </a>
+  </nav>
+
+  <div class="sidebar-user">
+    <strong><%= user.username %></strong>
+    Quản trị viên
+  </div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════ -->
+<main class="admin-main">
+
+  <!-- Thông báo -->
+  <% if (message) { %>
+    <div class="alert alert-success" style="margin-bottom:20px"><%= message %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert alert-error" style="margin-bottom:20px"><%= error %></div>
+  <% } %>
+
+  <!-- ════════════════════════════════════════════
+       DASHBOARD
+  ════════════════════════════════════════════ -->
+  <% if (page === 'dashboard') { %>
+
+    <div class="page-title">
+      <svg style="width:28px;height:28px;fill:#1DB954" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Dashboard
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">🎵 Tổng bài hát</div>
+        <div class="value"><%= totalSongs %></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">👥 Người dùng</div>
+        <div class="value"><%= totalUsers %></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>🕐 Bài hát mới nhất</h3>
+        <a href="/admin/songs" class="btn btn-outline btn-sm">Xem tất cả</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ảnh</th><th>Tên bài</th><th>Ca sĩ</th><th>Ngày thêm</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (recentSongs.length === 0) { %>
+              <tr><td colspan="4" style="text-align:center;color:var(--gray);padding:24px">Chưa có bài hát nào</td></tr>
+            <% } %>
+            <% recentSongs.forEach(s => { %>
+            <tr>
+              <td>
+                <% if (s.image) { %>
+                  <img class="thumb-sm" src="<%= s.image %>" alt="">
+                <% } else { %>
+                  <div class="thumb-placeholder">🎵</div>
+                <% } %>
+              </td>
+              <td><strong><%= s.title %></strong></td>
+              <td style="color:var(--gray)"><%= s.artist %></td>
+              <td style="color:var(--gray);font-size:0.8rem"><%= new Date(s.created_at).toLocaleDateString('vi-VN') %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  <% } %>
+
+  <!-- ════════════════════════════════════════════
+       QUẢN LÝ NHẠC
+  ════════════════════════════════════════════ -->
+  <% if (page === 'songs') { %>
+
+    <div class="page-title">
+      <svg style="width:28px;height:28px;fill:#1DB954" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      Quản lý bài hát
+    </div>
+
+    <!-- Form thêm / chỉnh sửa -->
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-header">
+        <h3><%= editSong ? '✏️ Chỉnh sửa bài hát' : '➕ Thêm bài hát mới' %></h3>
+        <% if (editSong) { %>
+          <a href="/admin/songs" class="btn btn-secondary btn-sm">✕ Hủy</a>
+        <% } %>
+      </div>
+      <div class="card-body">
+        <form
+          action="<%= editSong ? '/admin/songs/edit/' + editSong.id : '/admin/songs/add' %>"
+          method="POST"
+          enctype="multipart/form-data">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tên bài hát *</label>
+              <input type="text" name="title" required
+                     value="<%= editSong ? editSong.title : '' %>"
+                     placeholder="Nhập tên bài hát...">
+            </div>
+            <div class="form-group">
+              <label>Ca sĩ *</label>
+              <input type="text" name="artist" required
+                     value="<%= editSong ? editSong.artist : '' %>"
+                     placeholder="Nhập tên ca sĩ...">
+            </div>
+            <div class="form-group">
+              <label>Album</label>
+              <input type="text" name="album"
+                     value="<%= editSong ? (editSong.album || '') : '' %>"
+                     placeholder="Tên album (không bắt buộc)">
+            </div>
+            <div class="form-group">
+              <label>File MP3 <%= editSong ? '(để trống nếu không đổi)' : '*' %></label>
+              <input type="file" name="music_file" accept=".mp3" <%= editSong ? '' : 'required' %>>
+              <% if (editSong && editSong.music_file) { %>
+                <span class="current-file">📁 File hiện tại: .../<%= editSong.music_file.split('/').pop() %></span>
+              <% } %>
+            </div>
+            <div class="form-group">
+              <label>Ảnh bìa <%= editSong ? '(để trống nếu không đổi)' : '' %></label>
+              <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp" id="imgInput" onchange="previewImg(this)">
+              <% if (editSong && editSong.image) { %>
+                <div class="upload-preview"><img src="<%= editSong.image %>" id="imgPreview"></div>
+              <% } else { %>
+                <div id="imgPreviewWrap"></div>
+              <% } %>
+            </div>
+            <div class="form-group form-full">
+              <label>Mô tả</label>
+              <textarea name="description" rows="3" placeholder="Mô tả bài hát..."><%= editSong ? (editSong.description || '') : '' %></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:4px">
+            <button type="submit" class="btn btn-green">
+              <%= editSong ? '💾 Lưu thay đổi' : '➕ Thêm bài hát' %>
+            </button>
+            <% if (editSong) { %>
+              <a href="/admin/songs" class="btn btn-secondary">Hủy</a>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bảng danh sách -->
+    <div class="card">
+      <div class="card-header">
+        <h3>📋 Danh sách bài hát (<%= songs.length %>)</h3>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ảnh</th>
+              <th>Tên bài</th>
+              <th>Ca sĩ</th>
+              <th>Album</th>
+              <th>Ngày thêm</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (songs.length === 0) { %>
+              <tr>
+                <td colspan="6" style="text-align:center;color:var(--gray);padding:32px">
+                  Chưa có bài hát nào. Hãy thêm bài đầu tiên!
+                </td>
+              </tr>
+            <% } %>
+            <% songs.forEach(s => { %>
+            <tr>
+              <td>
+                <% if (s.image) { %>
+                  <img class="thumb-sm" src="<%= s.image %>" alt="">
+                <% } else { %>
+                  <div class="thumb-placeholder">🎵</div>
+                <% } %>
+              </td>
+              <td><strong><%= s.title %></strong></td>
+              <td style="color:var(--gray)"><%= s.artist %></td>
+              <td style="color:var(--gray);font-size:0.82rem"><%= s.album || '—' %></td>
+              <td style="color:var(--gray);font-size:0.8rem;white-space:nowrap">
+                <%= new Date(s.created_at).toLocaleDateString('vi-VN') %>
+              </td>
+              <td>
+                <div class="action-row">
+                  <a href="/admin/songs/edit/<%= s.id %>" class="btn btn-secondary btn-sm">✏️ Sửa</a>
+                  <button class="btn btn-danger btn-sm"
+                          onclick="confirmDelete(<%= s.id %>, '<%= s.title.replace(/'/g, "\\'") %>')">
+                    🗑️ Xóa
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal xác nhận xóa -->
+    <div class="modal-overlay" id="deleteModal">
+      <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+          <h3>🗑️ Xác nhận xóa bài hát</h3>
+          <button class="close-btn" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-danger-body">
+          <p>Bạn có chắc muốn xóa bài hát <strong id="deleteSongName"></strong>?</p>
+          <small>⚠️ File mp3 và ảnh bìa sẽ bị xóa vĩnh viễn.</small>
+        </div>
+        <form id="deleteForm" method="POST">
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-danger">🗑️ Xóa</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  <% } %>
+
+  <!-- ════════════════════════════════════════════
+       CÀI ĐẶT GIAO DIỆN
+  ════════════════════════════════════════════ -->
+  <% if (page === 'settings') { %>
+
+    <div class="page-title">
+      <svg style="width:28px;height:28px;fill:#1DB954" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      Cài đặt giao diện
+    </div>
+
+    <div class="alert alert-info" style="margin-bottom:20px">
+      💡 Sau khi cập nhật, khách chỉ cần F5 để thấy thay đổi.
+    </div>
+
+    <div class="settings-grid">
+
+      <!-- Logo -->
+      <div class="setting-card">
+        <div class="preview">
+          <% if (settings.logo) { %>
+            <img src="<%= settings.logo %>" alt="Logo" style="object-fit:contain">
+          <% } else { %>
+            <span class="no-img">🎵</span>
+          <% } %>
+        </div>
+        <div class="setting-body">
+          <h4>Logo website</h4>
+          <p>Hiển thị ở header và sidebar</p>
+          <form action="/admin/settings/upload/logo" method="POST" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp" required>
+            <button type="submit" class="btn btn-green btn-sm">Cập nhật</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Banner -->
+      <div class="setting-card">
+        <div class="preview">
+          <% if (settings.banner) { %>
+            <img src="<%= settings.banner %>" alt="Banner">
+          <% } else { %>
+            <span class="no-img">🖼️</span>
+          <% } %>
+        </div>
+        <div class="setting-body">
+          <h4>Banner trang chủ</h4>
+          <p>Ảnh banner hiển thị đầu trang Guest (max 300px chiều cao)</p>
+          <form action="/admin/settings/upload/banner" method="POST" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp" required>
+            <button type="submit" class="btn btn-green btn-sm">Cập nhật</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Background trang chủ -->
+      <div class="setting-card">
+        <div class="preview">
+          <% if (settings.background) { %>
+            <img src="<%= settings.background %>" alt="Background">
+          <% } else { %>
+            <span class="no-img">🌆</span>
+          <% } %>
+        </div>
+        <div class="setting-body">
+          <h4>Ảnh nền trang chủ</h4>
+          <p>Background của trang Guest</p>
+          <form action="/admin/settings/upload/background" method="POST" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp" required>
+            <button type="submit" class="btn btn-green btn-sm">Cập nhật</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Background Login -->
+      <div class="setting-card">
+        <div class="preview">
+          <% if (settings.login_background) { %>
+            <img src="<%= settings.login_background %>" alt="Login BG">
+          <% } else { %>
+            <span class="no-img">🔒</span>
+          <% } %>
+        </div>
+        <div class="setting-body">
+          <h4>Ảnh nền trang Login</h4>
+          <p>Background của trang đăng nhập / đăng ký</p>
+          <form action="/admin/settings/upload/login_background" method="POST" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp" required>
+            <button type="submit" class="btn btn-green btn-sm">Cập nhật</button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  <% } %>
+
+</main>
+</div><!-- end admin-layout -->
+
+<script>
+// ── Xác nhận xóa ────────────────────────────────
+function confirmDelete(id, name) {
+  document.getElementById('deleteSongName').textContent = `"${name}"`;
+  document.getElementById('deleteForm').action = `/admin/songs/delete/${id}`;
+  document.getElementById('deleteModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('deleteModal').classList.remove('open');
+}
+
+// Đóng khi click nền hoặc Escape
+document.getElementById('deleteModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ── Preview ảnh bìa trước khi upload ────────────
+function previewImg(input) {
+  const wrap = document.getElementById('imgPreviewWrap');
+  const preview = document.getElementById('imgPreview');
+  if (!input.files || !input.files[0]) return;
+  const url = URL.createObjectURL(input.files[0]);
+
+  if (preview) {
+    preview.src = url;
+  } else if (wrap) {
+    wrap.innerHTML = `<div class="upload-preview"><img src="${url}"></div>`;
+  }
+}
+
+// Tự ẩn thông báo sau 4 giây
+setTimeout(() => {
+  document.querySelectorAll('.alert-success').forEach(el => {
+    el.style.transition = 'opacity 0.5s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 500);
+  });
+}, 4000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= playlist.name %> — Music Player</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/playlist.css">
+</head>
+<body <% if (settings.background) { %> style="background-image:url('<%= settings.background %>');background-size:cover;background-attachment:fixed;" <% } %>>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <% if (settings.logo) { %><img src="<%= settings.logo %>" alt="Logo"><% } else { %><span>🎵</span><% } %>
+      <span>Music Player</span>
+    </div>
+    <nav class="main-nav">
+      <a href="/" class="nav-pill">🏠 Trang chủ</a>
+      <a href="/playlists" class="nav-pill">📋 Playlist</a>
+    </nav>
+    <div class="header-actions">
+      <div class="user-badge">👤 <span><%= user.username %></span></div>
+      <a href="/logout" class="btn btn-secondary btn-sm">Đăng xuất</a>
+    </div>
+  </div>
+</header>
+
+<main class="main-content" style="padding-bottom:120px">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb">
+    <a href="/playlists">📋 Playlist của tôi</a>
+    <span>›</span>
+    <span><%= playlist.name %></span>
+  </div>
+
+  <!-- Playlist hero -->
+  <div class="pl-hero">
+    <div class="pl-hero-cover">
+      <% const heroImg = songs.find(s => s.image)?.image; %>
+      <% if (heroImg) { %>
+        <img src="<%= heroImg %>" alt="<%= playlist.name %>">
+      <% } else { %>
+        <div class="pl-hero-placeholder">🎵</div>
+      <% } %>
+    </div>
+    <div class="pl-hero-info">
+      <div class="pl-hero-label">Playlist</div>
+      <h1 class="pl-hero-title"><%= playlist.name %></h1>
+      <div class="pl-hero-meta">
+        <%= songs.length %> bài hát
+        · Tạo <%= new Date(playlist.createdAt).toLocaleDateString('vi-VN') %>
+      </div>
+      <div class="pl-hero-actions">
+        <% if (songs.length > 0) { %>
+          <button class="btn btn-green" onclick="playAll()">▶ Phát tất cả</button>
+          <button class="btn btn-outline" onclick="shufflePlay()">🔀 Ngẫu nhiên</button>
+        <% } %>
+        <button class="btn btn-secondary" onclick="openRenameModal()">✏️ Đổi tên</button>
+        <button class="btn btn-danger" onclick="openDeleteModal()">🗑️ Xóa playlist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flash message -->
+  <% if (message) { %>
+    <div class="alert alert-success" id="flashMsg" style="margin-bottom:16px"><%= message %></div>
+  <% } %>
+
+  <div class="pl-detail-layout">
+
+    <!-- Danh sách bài trong playlist -->
+    <div class="pl-song-section">
+      <div class="section-header" style="margin-bottom:12px">
+        <h3>🎵 Danh sách bài (<%= songs.length %>)</h3>
+      </div>
+
+      <% if (songs.length === 0) { %>
+        <div class="empty-state" style="padding:40px 20px">
+          <div class="empty-icon">🎶</div>
+          <p>Playlist này chưa có bài nào. Thêm từ danh sách bên dưới!</p>
+        </div>
+      <% } else { %>
+      <div class="pl-song-list" id="sortableList">
+        <% songs.forEach(function(song, idx) { %>
+        <div class="pl-song-row" data-id="<%= song.id %>" data-idx="<%= idx %>">
+          <div class="pl-song-drag" title="Kéo để sắp xếp">⠿</div>
+          <div class="pl-song-num" onclick="playSong(<%= idx %>)">
+            <span class="num-label"><%= idx + 1 %></span>
+            <span class="play-label">▶</span>
+          </div>
+          <% if (song.image) { %>
+            <img class="thumb-sm" src="<%= song.image %>" alt="" onclick="playSong(<%= idx %>)">
+          <% } else { %>
+            <div class="thumb-placeholder" onclick="playSong(<%= idx %>)">🎵</div>
+          <% } %>
+          <div class="pl-song-meta" onclick="playSong(<%= idx %>)">
+            <div class="pl-song-title"><%= song.title %></div>
+            <div class="pl-song-artist"><%= song.artist %></div>
+          </div>
+          <div class="pl-song-album"><%= song.album || '' %></div>
+          <form method="POST" action="/playlists/<%= playlist.id %>/remove-song"
+                style="display:inline" onsubmit="return confirm('Xóa bài này khỏi playlist?')">
+            <input type="hidden" name="songId" value="<%= song.id %>">
+            <button type="submit" class="pl-remove-btn" title="Xóa khỏi playlist">✕</button>
+          </form>
+        </div>
+        <% }) %>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- Panel thêm bài -->
+    <% if (notInPlaylist.length > 0) { %>
+    <div class="pl-add-section">
+      <div class="section-header" style="margin-bottom:12px">
+        <h3>➕ Thêm bài vào playlist</h3>
+      </div>
+      <div class="pl-add-search">
+        <input type="text" id="addSearch" placeholder="Tìm bài hát..." oninput="filterAddList(this.value)">
+      </div>
+      <div class="pl-add-list" id="addList">
+        <% notInPlaylist.forEach(song => { %>
+        <div class="pl-add-row" data-title="<%= song.title.toLowerCase() %>" data-artist="<%= song.artist.toLowerCase() %>">
+          <% if (song.image) { %>
+            <img class="thumb-sm" src="<%= song.image %>" alt="">
+          <% } else { %>
+            <div class="thumb-placeholder">🎵</div>
+          <% } %>
+          <div class="pl-add-meta">
+            <div class="pl-song-title"><%= song.title %></div>
+            <div class="pl-song-artist"><%= song.artist %></div>
+          </div>
+          <button class="btn btn-green btn-sm pl-add-btn"
+                  data-song-id="<%= song.id %>"
+                  data-song-title="<%= song.title %>"
+                  onclick="addToPlaylist(this)">＋</button>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+  </div><!-- end pl-detail-layout -->
+</main>
+
+<!-- ══ PLAYER BAR ══════════════════════════════════ -->
+<div class="player-bar" id="playerBar">
+  <div class="player-inner">
+    <div class="player-info">
+      <div id="playerCoverWrap"></div>
+      <div class="player-meta">
+        <div class="title" id="playerTitle">—</div>
+        <div class="artist" id="playerArtist">—</div>
+      </div>
+    </div>
+    <div class="player-controls">
+      <div class="control-buttons">
+        <button class="ctrl-btn" onclick="prevSong()" title="Bài trước">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+        <button class="ctrl-btn play-pause" id="playPauseBtn" onclick="togglePlay()">
+          <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="ctrl-btn" onclick="nextSong()" title="Bài tiếp">
+          <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 4V8z"/><path d="M16 6h2v12h-2z"/></svg>
+        </button>
+      </div>
+      <div class="progress-area">
+        <span class="time-label" id="currentTime">0:00</span>
+        <input type="range" id="progressBar" min="0" max="100" value="0" oninput="seekTo(this.value)">
+        <span class="time-label right" id="totalTime">0:00</span>
+      </div>
+    </div>
+    <div class="player-right">
+      <div class="volume-area">
+        <span class="vol-icon"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></span>
+        <input type="range" id="volumeBar" min="0" max="1" step="0.01" value="1" oninput="setVolume(this.value)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<audio id="audioPlayer" preload="metadata"></audio>
+
+<!-- ══ MODAL ĐỔI TÊN ═════════════════════════════ -->
+<div class="modal-overlay" id="renameModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✏️ Đổi tên playlist</h3>
+      <button class="close-btn" onclick="closeModal('renameModal')">✕</button>
+    </div>
+    <form action="/playlists/<%= playlist.id %>/rename" method="POST">
+      <div class="form-group">
+        <label>Tên mới</label>
+        <input type="text" name="name" value="<%= playlist.name %>"
+               maxlength="80" required id="renameInput">
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-green">Lưu thay đổi</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('renameModal')">Hủy</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ MODAL XÓA PLAYLIST ════════════════════════ -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>🗑️ Xóa playlist</h3>
+      <button class="close-btn" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-danger-body">
+      <p>Bạn có chắc muốn xóa playlist <strong>"<%= playlist.name %>"</strong>?</p>
+      <small>⚠️ Hành động này không thể hoàn tác. Bài hát sẽ không bị xóa.</small>
+    </div>
+    <form action="/playlists/<%= playlist.id %>/delete" method="POST">
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-danger">🗑️ Xóa playlist</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">Hủy</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ TOAST NOTIFICATION ════════════════════════ -->
+<div id="toast" class="toast"></div>
+
+<!-- Dữ liệu bài hát cho player -->
+<script>
+const SONGS = <%- JSON.stringify(songs.map(s => ({
+  id: s.id, title: s.title, artist: s.artist,
+  image: s.image || '', src: s.music_file
+}))) %>;
+
+const PLAYLIST_ID = <%= playlist.id %>;
+
+function playAll() { if (SONGS.length) playSong(0); }
+
+function shufflePlay() {
+  if (!SONGS.length) return;
+  const idx = Math.floor(Math.random() * SONGS.length);
+  playSong(idx);
+}
+
+function openRenameModal() {
+  document.getElementById('renameModal').classList.add('open');
+  setTimeout(() => document.getElementById('renameInput').focus(), 80);
+}
+
+function openDeleteModal() { document.getElementById('deleteModal').classList.add('open'); }
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+// ── Thêm bài vào playlist (AJAX) ────────────────
+function addToPlaylist(btn) {
+  const songId    = btn.dataset.songId;
+  const songTitle = btn.dataset.songTitle;
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  fetch(`/playlists/${PLAYLIST_ID}/add-song`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+    body: `songId=${songId}`
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      btn.textContent = '✓';
+      btn.style.background = 'var(--gray2)';
+      showToast(`✅ Đã thêm "${songTitle}"`);
+    } else {
+      btn.disabled = false;
+      btn.textContent = '＋';
+      showToast('⚠️ ' + data.message, true);
+    }
+  })
+  .catch(() => { btn.disabled = false; btn.textContent = '＋'; });
+}
+
+// ── Toast ────────────────────────────────────────
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (isError ? 'toast-error' : 'toast-ok') + ' show';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Tìm trong panel thêm bài ─────────────────────
+function filterAddList(q) {
+  const kw = q.toLowerCase();
+  document.querySelectorAll('.pl-add-row').forEach(row => {
+    const match = row.dataset.title.includes(kw) || row.dataset.artist.includes(kw);
+    row.style.display = match ? '' : 'none';
+  });
+}
+
+// ── Ẩn flash message ─────────────────────────────
+setTimeout(() => {
+  const el = document.getElementById('flashMsg');
+  if (el) { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }
+}, 3000);
+
+// ── Highlight row đang phát ──────────────────────
+function highlightRow(idx) {
+  document.querySelectorAll('.pl-song-row').forEach(r => r.classList.remove('playing'));
+  const row = document.querySelector(`.pl-song-row[data-idx="${idx}"]`);
+  if (row) {
+    row.classList.add('playing');
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+</script>
+<script src="/js/player.js"></script>
+<script>
+// Override highlight để đồng bộ với row
+const _origPlay = playSong;
+// Patch: sau khi playSong gốc chạy, highlight row
+const origPlaySong = playSong;
+window.playSong = function(idx) {
+  origPlaySong(idx);
+  highlightRow(idx);
+};
+</script>
+</body>
+</html>

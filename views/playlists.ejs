@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playlist của tôi — Music Player</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/playlist.css">
+</head>
+<body <% if (settings.background) { %> style="background-image:url('<%= settings.background %>');background-size:cover;background-attachment:fixed;" <% } %>>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <% if (settings.logo) { %><img src="<%= settings.logo %>" alt="Logo"><% } else { %><span>🎵</span><% } %>
+      <span>Music Player</span>
+    </div>
+    <nav class="main-nav">
+      <a href="/" class="nav-pill">🏠 Trang chủ</a>
+      <a href="/playlists" class="nav-pill active">📋 Playlist</a>
+    </nav>
+    <div class="header-actions">
+      <div class="user-badge">👤 <span><%= user.username %></span></div>
+      <a href="/logout" class="btn btn-secondary btn-sm">Đăng xuất</a>
+    </div>
+  </div>
+</header>
+
+<main class="main-content">
+  <div class="section-header">
+    <h2>📋 Playlist của tôi (<%= playlists.length %>)</h2>
+    <button class="btn btn-green" onclick="openModal('createModal')">＋ Tạo playlist</button>
+  </div>
+
+  <% if (message) { %>
+    <div class="alert alert-success" id="flashMsg"><%= message %></div>
+  <% } %>
+
+  <% if (playlists.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">🎵</div>
+      <h3>Bạn chưa có playlist nào</h3>
+      <p>Tạo playlist đầu tiên để lưu những bài hát yêu thích!</p>
+      <button class="btn btn-green" onclick="openModal('createModal')">＋ Tạo playlist ngay</button>
+    </div>
+  <% } else { %>
+  <div class="playlist-grid">
+    <% playlists.forEach(pl => { %>
+    <div class="playlist-card">
+      <a href="/playlists/<%= pl.id %>" class="pl-card-link">
+        <div class="pl-cover">
+          <% if (pl.coverImg) { %>
+            <img src="<%= pl.coverImg %>" alt="<%= pl.name %>">
+          <% } else { %>
+            <div class="pl-cover-placeholder">
+              <% const icons = ['🎵','🎶','🎸','🎹','🎺','🥁']; %>
+              <%= icons[pl.id % icons.length] %>
+            </div>
+          <% } %>
+          <div class="pl-play-overlay">▶</div>
+        </div>
+        <div class="pl-info">
+          <div class="pl-name"><%= pl.name %></div>
+          <div class="pl-count"><%= pl.songs.length %> bài hát</div>
+        </div>
+      </a>
+      <div class="pl-actions">
+        <button class="pl-action-btn"
+          onclick="openRenameModal(<%= pl.id %>, '<%= pl.name.replace(/'/g,"\\'") %>')"
+          title="Đổi tên">✏️</button>
+        <button class="pl-action-btn danger"
+          onclick="openDeleteModal(<%= pl.id %>, '<%= pl.name.replace(/'/g,"\\'") %>')"
+          title="Xóa">🗑️</button>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+  <% } %>
+</main>
+
+<!-- ══ MODAL TẠO PLAYLIST ════════════════════════ -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✨ Tạo playlist mới</h3>
+      <button class="close-btn" onclick="closeModal('createModal')">✕</button>
+    </div>
+    <form action="/playlists/create" method="POST">
+      <div class="form-group">
+        <label>Tên playlist</label>
+        <input type="text" name="name" id="createInput"
+               placeholder="VD: Nhạc buổi sáng, Chill vibes..." maxlength="80" required>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-green">Tạo playlist</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('createModal')">Hủy</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ MODAL ĐỔI TÊN ═════════════════════════════ -->
+<div class="modal-overlay" id="renameModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>✏️ Đổi tên playlist</h3>
+      <button class="close-btn" onclick="closeModal('renameModal')">✕</button>
+    </div>
+    <form id="renameForm" method="POST">
+      <div class="form-group">
+        <label>Tên mới</label>
+        <input type="text" name="name" id="renameInput"
+               placeholder="Nhập tên mới..." maxlength="80" required>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-green">Lưu thay đổi</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('renameModal')">Hủy</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ MODAL XÓA PLAYLIST ════════════════════════ -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>🗑️ Xóa playlist</h3>
+      <button class="close-btn" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-danger-body">
+      <p>Bạn có chắc muốn xóa playlist <strong id="deletePlName"></strong>?</p>
+      <small>⚠️ Hành động này không thể hoàn tác. Bài hát trong playlist sẽ không bị xóa.</small>
+    </div>
+    <form id="deleteForm" method="POST">
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-danger">🗑️ Xóa playlist</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">Hủy</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  // Focus input nếu có
+  const input = document.querySelector(`#${id} input[type=text]`);
+  if (input) setTimeout(() => input.focus(), 80);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function openRenameModal(id, name) {
+  document.getElementById('renameForm').action = `/playlists/${id}/rename`;
+  document.getElementById('renameInput').value = name;
+  openModal('renameModal');
+}
+
+function openDeleteModal(id, name) {
+  document.getElementById('deletePlName').textContent = `"${name}"`;
+  document.getElementById('deleteForm').action = `/playlists/${id}/delete`;
+  openModal('deleteModal');
+}
+
+// Đóng khi click nền
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// Đóng bằng Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+});
+
+// Ẩn flash message sau 3s
+setTimeout(() => {
+  const el = document.getElementById('flashMsg');
+  if (el) { el.style.transition = 'opacity 0.4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }
+}, 3000);
+</script>
+</body>
+</html>

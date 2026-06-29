@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập — Music Player</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="auth-page"
+  <% if (settings.login_background) { %>
+    style="background-image: url('<%= settings.login_background %>')"
+  <% } else { %>
+    style="background: linear-gradient(135deg, #111 0%, #1a2a1a 100%)"
+  <% } %>>
+
+  <div class="auth-box">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <% if (settings.logo) { %>
+        <img src="<%= settings.logo %>" alt="Logo">
+      <% } %>
+      <h1>🎵 Music Player</h1>
+    </div>
+
+    <h2>Đăng nhập tài khoản</h2>
+
+    <!-- Thông báo lỗi -->
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <form action="/login" method="POST">
+      <div class="form-group">
+        <label for="username">Tên đăng nhập</label>
+        <input type="text" id="username" name="username"
+               placeholder="Nhập username..." required autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mật khẩu</label>
+        <input type="password" id="password" name="password"
+               placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn btn-primary">Đăng nhập</button>
+    </form>
+
+    <div class="auth-footer">
+      Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
