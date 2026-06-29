@@ -909,24 +909,13 @@ tbody tr:hover td { background: rgba(255,255,255,0.03); }
 
 /* Nút Tắt [X] ở góc phải */
 .modal-close,
-.modal button[onclick*="close"], /* Bắt các nút có chữ close */
 .close-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: transparent;
-  border: none;
-  color: var(--gray, #b3b3b3);
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  /* Ẩn hoàn toàn dấu X theo ý bạn */
+  display: none !important; 
 }
 
+/* Lưu ý: Tôi đã xóa dòng .modal button[onclick*="close"] đi 
+   để nút "Hủy" được trả về đúng vị trí bên dưới của nó */
 .modal-close:hover,
 .close-btn:hover {
   color: var(--white, #fff);
@@ -942,16 +931,16 @@ tbody tr:hover td { background: rgba(255,255,255,0.03); }
 /* --- Tối ưu hiển thị Modal riêng cho Điện Thoại --- */
 @media (max-width: 480px) {
   .modal-overlay {
-    align-items: flex-end; /* Đẩy modal xuống sát cạnh dưới màn hình */
-    padding: 0;
+    align-items: center !important; /* Đổi từ flex-end thành center để ra giữa */
+    padding: 16px; /* Cách mép màn hình một khoảng cho đẹp */
   }
   
   .modal {
     max-width: 100% !important;
     width: 100%;
-    border-radius: 24px 24px 0 0 !important; /* Bo tròn mạnh 2 góc trên */
-    padding: 24px 20px 40px; /* Tăng padding dưới để tránh cấn thanh vuốt iOS */
-    animation: modalSlideIn 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+    border-radius: 20px !important; /* Bo tròn đều 4 góc thay vì chỉ bo góc trên */
+    padding: 24px; 
+    animation: fadeIn 0.25s ease-out !important; /* Hiệu ứng mờ dần hiện ra tự nhiên */
   }
 
   /* Hiệu ứng trượt từ dưới lên chuẩn app mobile */
@@ -1197,4 +1186,28 @@ tbody tr:hover td { background: rgba(255,255,255,0.03); }
 .user-badge a, 
 .user-badge span {
   color: #ffffff !important; /* Ép chữ tên user thành màu trắng */
+}
+/* --- ÉP HIỂN THỊ LẠI CHỮ TRÊN HEADER VÀ ĐỔI MÀU TRẮNG CHO MOBILE --- */
+
+/* Hiện lại tên người dùng (User) */
+@media (max-width: 768px) {
+  .user-badge span {
+    display: inline-block !important; /* Hủy lệnh ẩn */
+    color: #ffffff !important; /* Ép màu trắng */
+  }
+}
+
+/* Hiện lại tên Web/Logo */
+@media (max-width: 480px) {
+  .logo span:last-child,
+  .logo span {
+    display: inline-block !important; /* Hủy lệnh ẩn */
+    color: #ffffff !important; /* Ép màu trắng */
+  }
+  
+  /* Căn chỉnh lại thanh header một chút để chữ hiện ra không bị chật */
+  .header-inner {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+  }
 }
