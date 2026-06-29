@@ -1190,13 +1190,6 @@ tbody tr:hover td { background: rgba(255,255,255,0.03); }
 /* --- ÉP HIỂN THỊ LẠI CHỮ TRÊN HEADER VÀ ĐỔI MÀU TRẮNG CHO MOBILE --- */
 
 /* Hiện lại tên người dùng (User) */
-@media (max-width: 768px) {
-  .user-badge span {
-    display: inline-block !important; /* Hủy lệnh ẩn */
-    color: #ffffff !important; /* Ép màu trắng */
-  }
-}
-
 /* Hiện lại tên Web/Logo */
 @media (max-width: 480px) {
   .logo span:last-child,
@@ -1205,9 +1198,18 @@ tbody tr:hover td { background: rgba(255,255,255,0.03); }
     color: #ffffff !important; /* Ép màu trắng */
   }
   
-  /* Căn chỉnh lại thanh header một chút để chữ hiện ra không bị chật */
+  /* CHUYỂN TỪ DẠNG KÉO SANG THÀNH XUỐNG HÀNG */
   .header-inner {
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
+    flex-wrap: wrap !important;       /* Cho phép các phần tử tự động xuống hàng */
+    height: auto !important;          /* Cho phép chiều cao tự động tăng khi có hàng mới */
+    padding: 12px 16px !important;    /* Tăng khoảng cách đệm cho thoáng rộng */
+    overflow-x: visible !important;   /* Tắt bỏ hoàn toàn thanh kéo ngang */
+    gap: 10px !important;             /* Tạo khoảng cách giữa các hàng và các nút */
+  }
+
+  /* Đảm bảo các khối như tìm kiếm hoặc nút hành động chiếm trọn hàng nếu muốn */
+  .search-bar {
+    width: 100% !important;           /* Thanh tìm kiếm sẽ đẩy xuống một hàng riêng biệt */
+    order: 3;                         /* Nằm ở hàng dưới cùng */
   }
 }
