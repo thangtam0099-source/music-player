@@ -551,6 +551,24 @@
 
 /* ── Responsive — Mobile ────────────────────── */
 @media (max-width: 600px) {
+  /* Tăng vùng chạm cho các dòng bài hát trong Playlist */
+  .pl-song-row { 
+    padding: 12px 10px; 
+    gap: 12px; 
+    border-bottom: 1px solid rgba(255,255,255,0.05); /* Thêm dải phân cách nhẹ */
+  }
+  
+  .pl-song-title { font-size: 1rem; margin-bottom: 4px; }
+  .pl-song-artist { font-size: 0.85rem; }
+
+  /* Đảm bảo nút xóa luôn hiện to rõ, có màu sắc cảnh báo nhẹ */
+  .pl-remove-btn { 
+    opacity: 1; 
+    padding: 10px; 
+    font-size: 1.2rem;
+    color: #fc8181;
+    background: rgba(229,62,62,0.1);
+  }
 
   /* ── Playlist grid: 2 cột ── */
   .playlist-grid {
