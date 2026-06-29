@@ -124,35 +124,42 @@
 <div class="player-bar" id="playerBar">
   <div class="player-inner">
 
-    <!-- Left: Song info -->
+    <!-- [1] Info -->
     <div class="player-info">
       <div id="playerCoverWrap"></div>
       <div class="player-meta">
-        <div class="title" id="playerTitle">—</div>
+        <div class="title"  id="playerTitle">—</div>
         <div class="artist" id="playerArtist">—</div>
       </div>
     </div>
 
-    <!-- Center: Controls + Progress -->
+    <!-- [2] Control buttons (desktop: trong player-controls / mobile: grid col 2 row 1) -->
+    <div class="control-buttons">
+      <button class="ctrl-btn" onclick="prevSong()" title="Bài trước">
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+      </button>
+      <button class="ctrl-btn play-pause" id="playPauseBtn" onclick="togglePlay()">
+        <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="ctrl-btn" onclick="nextSong()" title="Bài tiếp">
+        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 4V8z"/><path d="M16 6h2v12h-2z"/></svg>
+      </button>
+    </div>
+
+    <!-- [3] Player controls: desktop gộp buttons+progress, mobile chỉ có progress -->
     <div class="player-controls">
+      <!-- Buttons này hiện trên desktop, ẩn trên mobile (đã có ở [2]) -->
       <div class="control-buttons">
-        <!-- Bài trước -->
-        <button class="ctrl-btn" onclick="prevSong()" title="Bài trước">
+        <button class="ctrl-btn" onclick="prevSong()">
           <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
         </button>
-
-        <!-- Play/Pause -->
-        <button class="ctrl-btn play-pause" id="playPauseBtn" onclick="togglePlay()">
-          <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <button class="ctrl-btn play-pause" onclick="togglePlay()">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>
-
-        <!-- Bài sau -->
-        <button class="ctrl-btn" onclick="nextSong()" title="Bài tiếp">
-          <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 4V8z" /><path d="M16 6h2v12h-2z"/></svg>
+        <button class="ctrl-btn" onclick="nextSong()">
+          <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 4V8z"/><path d="M16 6h2v12h-2z"/></svg>
         </button>
       </div>
-
-      <!-- Progress -->
       <div class="progress-area">
         <span class="time-label" id="currentTime">0:00</span>
         <input type="range" id="progressBar" min="0" max="100" value="0" oninput="seekTo(this.value)">
@@ -160,7 +167,7 @@
       </div>
     </div>
 
-    <!-- Right: Volume -->
+    <!-- [4] Volume (ẩn mobile) -->
     <div class="player-right">
       <div class="volume-area">
         <span class="vol-icon">
@@ -172,7 +179,6 @@
 
   </div>
 </div>
-
 <!-- ══ HIDDEN AUDIO ════════════════════════════════ -->
 <audio id="audioPlayer" preload="metadata"></audio>
 

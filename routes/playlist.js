@@ -1,232 +1,189 @@
 const express = require('express');
 const router  = express.Router();
-const { db, nextId } = require('../database/db');
-const { requireLogin } = require('../middleware/auth');
+const { db, parseSongIds } = require('../database/db');
+const { requireLogin }     = require('../middleware/auth');
 
-// Áp dụng requireLogin cho mọi route trong file này
 router.use(requireLogin);
 
-// ── Helper: lấy playlist của user hiện tại ─────
-function getUserPlaylists(userId) {
-  return db.get('playlists').filter({ userId }).value() || [];
+async function getSettings() {
+  const { rows } = await db.execute('SELECT * FROM settings WHERE id = 1');
+  return rows[0] || {};
 }
 
-// ── Helper: lấy thông tin bài hát đầy đủ cho playlist ─
-function hydrateSongs(songIds) {
-  const allMusic = db.get('music').value() || [];
-  return songIds
-    .map(id => allMusic.find(s => s.id === id))
-    .filter(Boolean); // bỏ qua bài đã bị xóa
+// Lấy bài hát đầy đủ từ danh sách id
+async function hydrateSongs(songIds) {
+  if (!songIds.length) return [];
+  const { rows } = await db.execute('SELECT * FROM music');
+  return songIds.map(id => rows.find(s => Number(s.id) === id)).filter(Boolean);
 }
 
-// ═══════════════════════════════════════════════
-// GET /playlists — Trang danh sách playlist
-// ═══════════════════════════════════════════════
-router.get('/', (req, res) => {
-  const userId    = req.session.user.id;
-  const playlists = getUserPlaylists(userId);
-  const settings  = db.get('settings').value() || {};
-  const allMusic  = db.get('music').value() || [];
+// ── GET /playlists ──────────────────────────────
+router.get('/', async (req, res) => {
+  const userId = req.session.user.id;
+  const { rows: playlists } = await db.execute(
+    'SELECT * FROM playlists WHERE user_id = ? ORDER BY created_at DESC', [userId]
+  );
+  const { rows: allMusic } = await db.execute('SELECT * FROM music');
+  const settings = await getSettings();
 
-  // Gắn thông tin bài hát vào từng playlist để hiển thị
-  const enriched = playlists.map(pl => ({
-    ...pl,
-    songs:     hydrateSongs(pl.songIds),
-    coverImg:  hydrateSongs(pl.songIds).find(s => s.image)?.image || null
+  const enriched = await Promise.all(playlists.map(async pl => {
+    const ids   = parseSongIds(pl.song_ids);
+    const songs = ids.map(id => allMusic.find(s => Number(s.id) === id)).filter(Boolean);
+    return { ...pl, songIds: ids, songs, coverImg: songs.find(s => s.image)?.image || null };
   }));
 
   res.render('playlists', {
-    user: req.session.user,
-    playlists: enriched,
-    allMusic,
-    settings,
-    message: req.query.message || null
+    user: req.session.user, playlists: enriched,
+    allMusic, settings, message: req.query.message || null
   });
 });
 
-// ═══════════════════════════════════════════════
-// GET /playlists/:id — Chi tiết một playlist
-// ═══════════════════════════════════════════════
-router.get('/:id', (req, res) => {
-  const userId = req.session.user.id;
-  const plId   = parseInt(req.params.id);
+// ── GET /playlists/api/my ───────────────────────
+router.get('/api/my', async (req, res) => {
+  const { rows } = await db.execute(
+    'SELECT * FROM playlists WHERE user_id = ? ORDER BY created_at DESC',
+    [req.session.user.id]
+  );
+  const playlists = rows.map(pl => ({
+    id: Number(pl.id), name: pl.name,
+    count: parseSongIds(pl.song_ids).length
+  }));
+  res.json({ ok: true, playlists });
+});
 
-  const playlist = db.get('playlists').find({ id: plId, userId }).value();
+// ── GET /playlists/:id ──────────────────────────
+router.get('/:id', async (req, res) => {
+  const userId = req.session.user.id;
+  const { rows } = await db.execute(
+    'SELECT * FROM playlists WHERE id = ? AND user_id = ?', [req.params.id, userId]
+  );
+  const playlist = rows[0];
   if (!playlist) return res.redirect('/playlists?message=Playlist không tồn tại');
 
-  const songs    = hydrateSongs(playlist.songIds);
-  const allMusic = db.get('music').value() || [];
-  const settings = db.get('settings').value() || {};
-
-  // Các bài chưa có trong playlist (để gợi ý thêm)
-  const notInPlaylist = allMusic.filter(s => !playlist.songIds.includes(s.id));
+  const songIds = parseSongIds(playlist.song_ids);
+  const songs   = await hydrateSongs(songIds);
+  const { rows: allMusic } = await db.execute('SELECT * FROM music');
+  const notInPlaylist = allMusic.filter(s => !songIds.includes(Number(s.id)));
+  const settings = await getSettings();
 
   res.render('playlist_detail', {
     user: req.session.user,
-    playlist,
-    songs,
-    notInPlaylist,
-    settings,
+    playlist: { ...playlist, songIds },
+    songs, notInPlaylist, settings,
     message: req.query.message || null
   });
 });
 
-// ═══════════════════════════════════════════════
-// POST /playlists/create — Tạo playlist mới
-// ═══════════════════════════════════════════════
-router.post('/create', (req, res) => {
+// ── POST /playlists/create ──────────────────────
+router.post('/create', async (req, res) => {
   const { name } = req.body;
   const userId   = req.session.user.id;
+  if (!name?.trim()) return res.redirect('/playlists?message=Tên playlist không được để trống');
 
-  if (!name || !name.trim()) {
-    return res.redirect('/playlists?message=Tên playlist không được để trống');
-  }
-
-  // Giới hạn 20 playlist / user
-  const count = getUserPlaylists(userId).length;
-  if (count >= 20) {
+  const { rows } = await db.execute(
+    'SELECT COUNT(*) as c FROM playlists WHERE user_id = ?', [userId]
+  );
+  if (Number(rows[0].c) >= 20)
     return res.redirect('/playlists?message=Bạn chỉ được tạo tối đa 20 playlist');
-  }
 
-  const id = nextId('playlists');
-  db.get('playlists').push({
-    id,
-    userId,
-    name:      name.trim(),
-    songIds:   [],
-    createdAt: new Date().toISOString()
-  }).write();
-
-  res.redirect(`/playlists/${id}?message=Đã tạo playlist "${name.trim()}"!`);
+  const result = await db.execute(
+    'INSERT INTO playlists (user_id, name, song_ids) VALUES (?, ?, ?)',
+    [userId, name.trim(), '[]']
+  );
+  res.redirect(`/playlists/${result.lastInsertRowid}?message=Đã tạo playlist "${name.trim()}"!`);
 });
 
-// ═══════════════════════════════════════════════
-// POST /playlists/:id/rename — Đổi tên playlist
-// ═══════════════════════════════════════════════
-router.post('/:id/rename', (req, res) => {
-  const userId = req.session.user.id;
-  const plId   = parseInt(req.params.id);
+// ── POST /playlists/:id/rename ──────────────────
+router.post('/:id/rename', async (req, res) => {
   const { name } = req.body;
+  const userId   = req.session.user.id;
+  if (!name?.trim()) return res.redirect(`/playlists/${req.params.id}?message=Tên không được để trống`);
 
-  if (!name || !name.trim()) {
-    return res.redirect(`/playlists/${plId}?message=Tên không được để trống`);
-  }
-
-  const playlist = db.get('playlists').find({ id: plId, userId }).value();
-  if (!playlist) return res.redirect('/playlists');
-
-  db.get('playlists').find({ id: plId }).assign({ name: name.trim() }).write();
-  res.redirect(`/playlists/${plId}?message=Đã đổi tên thành công!`);
+  await db.execute(
+    'UPDATE playlists SET name = ? WHERE id = ? AND user_id = ?',
+    [name.trim(), req.params.id, userId]
+  );
+  res.redirect(`/playlists/${req.params.id}?message=Đã đổi tên thành công!`);
 });
 
-// ═══════════════════════════════════════════════
-// POST /playlists/:id/delete — Xóa playlist
-// ═══════════════════════════════════════════════
-router.post('/:id/delete', (req, res) => {
-  const userId = req.session.user.id;
-  const plId   = parseInt(req.params.id);
-
-  const playlist = db.get('playlists').find({ id: plId, userId }).value();
-  if (playlist) {
-    db.get('playlists').remove({ id: plId, userId }).write();
-  }
-
+// ── POST /playlists/:id/delete ──────────────────
+router.post('/:id/delete', async (req, res) => {
+  await db.execute(
+    'DELETE FROM playlists WHERE id = ? AND user_id = ?',
+    [req.params.id, req.session.user.id]
+  );
   res.redirect('/playlists?message=Đã xóa playlist!');
 });
 
-// ═══════════════════════════════════════════════
-// POST /playlists/:id/add-song — Thêm bài vào playlist
-// ═══════════════════════════════════════════════
-router.post('/:id/add-song', (req, res) => {
-  const userId  = req.session.user.id;
-  const plId    = parseInt(req.params.id);
-  const songId  = parseInt(req.body.songId);
-  const isAjax  = req.headers['x-requested-with'] === 'XMLHttpRequest';
+// ── POST /playlists/:id/add-song ────────────────
+router.post('/:id/add-song', async (req, res) => {
+  const userId = req.session.user.id;
+  const plId   = req.params.id;
+  const songId = parseInt(req.body.songId);
+  const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest';
+  const fail   = (msg) => isAjax ? res.json({ ok: false, message: msg }) : res.redirect(`/playlists/${plId}?message=${msg}`);
 
-  const playlist = db.get('playlists').find({ id: plId, userId }).value();
-  if (!playlist) {
-    if (isAjax) return res.json({ ok: false, message: 'Playlist không tồn tại' });
-    return res.redirect('/playlists');
-  }
+  const { rows: plRows } = await db.execute(
+    'SELECT * FROM playlists WHERE id = ? AND user_id = ?', [plId, userId]
+  );
+  const playlist = plRows[0];
+  if (!playlist) return fail('Playlist không tồn tại');
 
-  // Kiểm tra bài hát tồn tại
-  const song = db.get('music').find({ id: songId }).value();
-  if (!song) {
-    if (isAjax) return res.json({ ok: false, message: 'Bài hát không tồn tại' });
-    return res.redirect(`/playlists/${plId}`);
-  }
+  const { rows: songRows } = await db.execute('SELECT * FROM music WHERE id = ?', [songId]);
+  if (!songRows[0]) return fail('Bài hát không tồn tại');
 
-  // Không thêm trùng
-  if (playlist.songIds.includes(songId)) {
-    if (isAjax) return res.json({ ok: false, message: 'Bài này đã có trong playlist' });
-    return res.redirect(`/playlists/${plId}?message=Bài này đã có trong playlist`);
-  }
+  const ids = parseSongIds(playlist.song_ids);
+  if (ids.includes(songId)) return fail('Bài này đã có trong playlist');
+  if (ids.length >= 200)    return fail('Playlist đã đủ 200 bài');
 
-  // Giới hạn 200 bài / playlist
-  if (playlist.songIds.length >= 200) {
-    if (isAjax) return res.json({ ok: false, message: 'Playlist đã đầy (tối đa 200 bài)' });
-    return res.redirect(`/playlists/${plId}?message=Playlist đã đủ 200 bài`);
-  }
+  ids.push(songId);
+  await db.execute(
+    'UPDATE playlists SET song_ids = ? WHERE id = ?', [JSON.stringify(ids), plId]
+  );
 
-  db.get('playlists').find({ id: plId }).get('songIds').push(songId).write();
-
-  if (isAjax) return res.json({ ok: true, message: `Đã thêm "${song.title}" vào playlist` });
+  if (isAjax) return res.json({ ok: true, message: `Đã thêm "${songRows[0].title}" vào playlist` });
   res.redirect(`/playlists/${plId}?message=Đã thêm bài vào playlist!`);
 });
 
-// ═══════════════════════════════════════════════
-// POST /playlists/:id/remove-song — Xóa bài khỏi playlist
-// ═══════════════════════════════════════════════
-router.post('/:id/remove-song', (req, res) => {
+// ── POST /playlists/:id/remove-song ────────────
+router.post('/:id/remove-song', async (req, res) => {
   const userId = req.session.user.id;
-  const plId   = parseInt(req.params.id);
+  const plId   = req.params.id;
   const songId = parseInt(req.body.songId);
   const isAjax = req.headers['x-requested-with'] === 'XMLHttpRequest';
 
-  const playlist = db.get('playlists').find({ id: plId, userId }).value();
+  const { rows } = await db.execute(
+    'SELECT * FROM playlists WHERE id = ? AND user_id = ?', [plId, userId]
+  );
+  const playlist = rows[0];
   if (!playlist) {
-    if (isAjax) return res.json({ ok: false, message: 'Không tìm thấy playlist' });
-    return res.redirect('/playlists');
+    return isAjax ? res.json({ ok: false }) : res.redirect('/playlists');
   }
 
-  const newIds = playlist.songIds.filter(id => id !== songId);
-  db.get('playlists').find({ id: plId }).assign({ songIds: newIds }).write();
+  const ids    = parseSongIds(playlist.song_ids).filter(id => id !== songId);
+  await db.execute('UPDATE playlists SET song_ids = ? WHERE id = ?', [JSON.stringify(ids), plId]);
 
   if (isAjax) return res.json({ ok: true });
   res.redirect(`/playlists/${plId}?message=Đã xóa bài khỏi playlist!`);
 });
 
-// ═══════════════════════════════════════════════
-// POST /playlists/:id/reorder — Kéo thả sắp xếp thứ tự
-// ═══════════════════════════════════════════════
-router.post('/:id/reorder', (req, res) => {
+// ── POST /playlists/:id/reorder ─────────────────
+router.post('/:id/reorder', async (req, res) => {
   const userId  = req.session.user.id;
-  const plId    = parseInt(req.params.id);
-  const { songIds } = req.body; // mảng id mới từ client
+  const { songIds } = req.body;
 
-  const playlist = db.get('playlists').find({ id: plId, userId }).value();
+  const { rows } = await db.execute(
+    'SELECT * FROM playlists WHERE id = ? AND user_id = ?', [req.params.id, userId]
+  );
+  const playlist = rows[0];
   if (!playlist) return res.json({ ok: false });
 
-  // Chỉ cho phép các id đã có trong playlist
-  const valid = songIds
-    .map(id => parseInt(id))
-    .filter(id => playlist.songIds.includes(id));
-
-  db.get('playlists').find({ id: plId }).assign({ songIds: valid }).write();
+  const current = parseSongIds(playlist.song_ids);
+  const valid   = songIds.map(id => parseInt(id)).filter(id => current.includes(id));
+  await db.execute(
+    'UPDATE playlists SET song_ids = ? WHERE id = ?', [JSON.stringify(valid), req.params.id]
+  );
   res.json({ ok: true });
-});
-
-// ═══════════════════════════════════════════════
-// GET /playlists/api/my — API lấy danh sách playlist (cho popup)
-// ═══════════════════════════════════════════════
-router.get('/api/my', (req, res) => {
-  const userId    = req.session.user.id;
-  const playlists = getUserPlaylists(userId).map(pl => ({
-    id:    pl.id,
-    name:  pl.name,
-    count: pl.songIds.length
-  }));
-  res.json({ ok: true, playlists });
 });
 
 module.exports = router;

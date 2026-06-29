@@ -860,186 +860,185 @@ tbody tr:hover td { background: rgba(255,255,255,0.03); }
 }
 
 /* ═══════════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE — TABLET (≤768px)
 ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .sidebar { display: none; }
-  .admin-main { margin-left: 0; padding: 16px; }
-  .form-row { grid-template-columns: 1fr; }
-  .song-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-  .progress-area { width: 200px; }
+  .sidebar      { display: none; }
+  .admin-main   { margin-left: 0; padding: 16px; }
+  .form-row     { grid-template-columns: 1fr; }
+  .stats-grid   { grid-template-columns: 1fr 1fr; }
+  .settings-grid { grid-template-columns: 1fr; }
+
+  .header-inner { flex-wrap: wrap; height: auto; padding: 10px 16px; gap: 8px; }
+  .main-nav     { order: 3; width: 100%; justify-content: center; }
+  .search-bar   { order: 4; width: 100%; max-width: 100%; }
+  .header-actions { margin-left: auto; }
+  .user-badge span { display: none; }
+
+  .song-grid    { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+
   .player-inner { grid-template-columns: 1fr auto; }
   .player-right { display: none; }
-  .header-inner { gap: 10px; }
-  .search-bar { max-width: 200px; }
-  .stats-grid { grid-template-columns: 1fr 1fr; }
-  .settings-grid { grid-template-columns: 1fr; }
-}
+  .progress-area { width: 200px; }
 
-@media (max-width: 480px) {
-  .song-grid { grid-template-columns: repeat(2, 1fr); }
-  .progress-area { width: 150px; }
-  .time-label { display: none; }
+  .banner { max-height: 180px; }
+  .banner img   { height: 180px; }
 }
 
 /* ═══════════════════════════════════════════════
-   MODAL — Global
+   RESPONSIVE — MOBILE (≤480px)
 ═══════════════════════════════════════════════ */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 9000;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  /* Animation */
-  opacity: 0;
-  transition: opacity 0.2s ease;
+@media (max-width: 480px) {
+
+  /* ── Header ── */
+  .header-inner { padding: 8px 12px; gap: 6px; }
+  .logo span:last-child { display: none; }
+  .logo img { width: 28px; height: 28px; }
+  .nav-pill { padding: 5px 10px; font-size: 0.78rem; }
+  .search-bar input  { padding: 8px 12px; font-size: 0.86rem; }
+  .search-bar button { padding: 8px 12px; }
+
+  /* ── Song grid: 2 cột ── */
+  .song-grid  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .song-card  { padding: 10px; }
+  .song-title { font-size: 0.84rem; }
+  .song-artist { font-size: 0.76rem; }
+  .song-card .add-pl-btn { opacity: 1; }
+
+  /* ── Main content ── */
+  .main-content { padding: 12px 12px 150px; }
+  .section-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .section-header h2 { font-size: 1rem; }
+  .sort-bar { width: 100%; }
+  .sort-btn { flex: 1; text-align: center; }
+
+  /* ── Banner ── */
+  .banner { max-height: 130px; }
+  .banner img { height: 130px; }
+  .banner-text h2 { font-size: 1rem; }
+  .banner-text p  { font-size: 0.8rem; }
+
+  /* ── Player bar — layout 2 hàng ── */
+  .player-bar { padding: 10px 14px 16px; }
+
+  .player-inner {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Hàng 1: [ảnh+tên] bên trái, [prev·play·next] bên phải */
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .player-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+  }
+
+  /* Trên mobile: ẩn control-buttons trong player-controls,
+     để controls nằm chung hàng với info */
+  .player-inner {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-rows: auto auto !important;
+  }
+
+  .player-info     { grid-column: 1; grid-row: 1; align-items: center; }
+  .player-controls { grid-column: 1 / -1; grid-row: 2; }
+  .player-right    { display: none !important; }
+
+  /* Kéo control-buttons vào hàng 1 bên phải info */
+  .control-buttons {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Ẩn control-buttons trong player-controls (chỉ giữ progress) */
+  .player-controls .control-buttons { display: none; }
+
+  .progress-area {
+    width: 100% !important;
+    gap: 8px;
+  }
+
+  .time-label { display: block !important; font-size: 0.7rem; min-width: 28px; }
+
+  .ctrl-btn svg { width: 22px; height: 22px; }
+  .ctrl-btn.play-pause { width: 42px; height: 42px; }
+  .ctrl-btn.play-pause svg { width: 19px; height: 19px; }
+
+  .player-cover, .player-cover-placeholder {
+    width: 40px !important;
+    height: 40px !important;
+    flex-shrink: 0;
+  }
+
+  .player-meta .title  { font-size: 0.84rem; }
+  .player-meta .artist { font-size: 0.74rem; }
+
+  /* ── Auth ── */
+  .auth-box { padding: 28px 20px; margin: 12px; border-radius: 14px; }
+  .auth-logo h1 { font-size: 1.2rem; }
+
+  /* ── Admin ── */
+  .card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .table-wrap  { -webkit-overflow-scrolling: touch; }
+
+  /* ── Modal: trượt lên từ dưới ── */
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal {
+    border-radius: 20px 20px 0 0 !important;
+    max-width: 100% !important;
+    width: 100%;
+    padding: 24px 20px 36px;
+    max-height: 85vh;
+  }
+
+  @keyframes modalSlideIn {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* ── Popup playlist: bottom sheet ── */
+  .pl-popup {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    max-width: 100% !important;
+    border-radius: 16px 16px 0 0;
+    max-height: 55vh;
+    padding: 12px 8px 28px;
+  }
 }
 
-.modal-overlay.open {
-  display: flex;
-  opacity: 1;
+/* ── Desktop: ẩn control-buttons ngoài (chỉ dùng cái trong player-controls) ── */
+@media (min-width: 481px) {
+  /* Ẩn control-buttons [2] nằm ngoài player-controls */
+  .player-inner > .control-buttons { display: none; }
+  /* Hiện control-buttons trong player-controls bình thường */
+  .player-controls .control-buttons { display: flex; }
+  /* Reset player-inner về grid 3 cột */
+  .player-inner {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    align-items: center;
+    gap: 16px;
+  }
+  /* Ẩn control-buttons grid item (col 2 desktop không cần) */
+  .player-inner > .control-buttons { display: none !important; }
+  /* player-info col 1, player-controls col 2 (center), player-right col 3 */
 }
-
-/* Animate content in */
-.modal-overlay.open .modal {
-  animation: modalSlideIn 0.22s cubic-bezier(0.34, 1.26, 0.64, 1) both;
-}
-
-@keyframes modalSlideIn {
-  from { transform: translateY(24px) scale(0.96); opacity: 0; }
-  to   { transform: translateY(0)    scale(1);    opacity: 1; }
-}
-
-.modal {
-  background: #1e1e1e;
-  border: 1px solid #2e2e2e;
-  border-radius: 18px;
-  padding: 28px 28px 24px;
-  width: 100%;
-  max-width: 460px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.04),
-    0 24px 60px rgba(0,0,0,0.7);
-  position: relative;
-}
-
-.modal::-webkit-scrollbar { width: 4px; }
-.modal::-webkit-scrollbar-track { background: transparent; }
-.modal::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 22px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #2a2a2a;
-}
-
-.modal-header h3 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.close-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #2a2a2a;
-  border: none;
-  border-radius: 50%;
-  color: var(--gray);
-  font-size: 1rem;
-  cursor: pointer;
-  line-height: 1;
-  transition: background var(--transition), color var(--transition);
-  flex-shrink: 0;
-}
-
-.close-btn:hover {
-  background: #3a3a3a;
-  color: var(--white);
-}
-
-/* Form inside modal */
-.modal .form-group {
-  margin-bottom: 18px;
-}
-
-.modal .form-group label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--gray);
-  margin-bottom: 8px;
-}
-
-.modal .form-group input,
-.modal .form-group textarea {
-  width: 100%;
-  padding: 13px 16px;
-  background: #141414;
-  border: 1.5px solid #2e2e2e;
-  border-radius: 12px;
-  color: var(--white);
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.18s, box-shadow 0.18s;
-}
-
-.modal .form-group input:focus,
-.modal .form-group textarea:focus {
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(29,185,84,0.12);
-}
-
-.modal .form-group input::placeholder { color: #555; }
-
-/* Danger zone (modal xóa) */
-.modal-danger-body {
-  background: rgba(229, 62, 62, 0.06);
-  border: 1px solid rgba(229, 62, 62, 0.2);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 22px;
-}
-
-.modal-danger-body p {
-  color: var(--gray);
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
-.modal-danger-body strong { color: var(--white); }
-
-.modal-danger-body small {
-  display: block;
-  margin-top: 8px;
-  color: #fc8181;
-  font-size: 0.82rem;
-}
-
-/* Modal footer buttons */
-.modal-footer {
-  display: flex;
-  gap: 10px;
-  padding-top: 4px;
-}
-
-.modal-footer .btn { flex: 1; justify-content: center; }

@@ -3,28 +3,30 @@ const router  = express.Router();
 const { db }  = require('../database/db');
 const { requireLogin } = require('../middleware/auth');
 
-router.get('/', requireLogin, (req, res) => {
+router.get('/', requireLogin, async (req, res) => {
   const { q, sort } = req.query;
-  let songs = db.get('music').value() || [];
 
-  // Tìm kiếm
+  let sql    = 'SELECT * FROM music';
+  let params = [];
+
   if (q && q.trim()) {
-    const kw = q.trim().toLowerCase();
-    songs = songs.filter(s =>
-      s.title.toLowerCase().includes(kw) ||
-      s.artist.toLowerCase().includes(kw)
-    );
+    sql   += ' WHERE (title LIKE ? OR artist LIKE ?)';
+    params = [`%${q.trim()}%`, `%${q.trim()}%`];
   }
 
-  // Sắp xếp
-  if (sort === 'az') {
-    songs = [...songs].sort((a, b) => a.title.localeCompare(b.title, 'vi'));
-  } else {
-    songs = [...songs].sort((a, b) => b.id - a.id); // mới nhất = id cao nhất
-  }
+  sql += sort === 'az' ? ' ORDER BY title ASC' : ' ORDER BY created_at DESC';
 
-  const settings = db.get('settings').value() || {};
-  res.render('home', { user: req.session.user, songs, settings, q: q || '', sort: sort || 'newest' });
+  const { rows: songs }    = await db.execute(sql, params);
+  const { rows: settingsR } = await db.execute('SELECT * FROM settings WHERE id = 1');
+  const settings = settingsR[0] || {};
+
+  res.render('home', {
+    user: req.session.user,
+    songs,
+    settings,
+    q:    q    || '',
+    sort: sort || 'newest'
+  });
 });
 
 module.exports = router;

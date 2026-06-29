@@ -6,3 +6,4 @@ uploads/images/*
 !uploads/music/.gitkeep
 !uploads/images/.gitkeep
 *.log
+sessions/

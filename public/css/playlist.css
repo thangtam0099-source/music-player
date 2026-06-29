@@ -533,7 +533,7 @@
   border-top: 2px solid var(--green);
 }
 
-/* ── Responsive ─────────────────────────────── */
+/* ── Responsive — Tablet ────────────────────── */
 @media (max-width: 900px) {
   .pl-detail-layout {
     grid-template-columns: 1fr;
@@ -544,14 +544,68 @@
     max-height: 400px;
   }
 
-  .pl-hero { flex-direction: column; align-items: flex-start; }
+  .pl-hero { flex-direction: row; align-items: flex-end; gap: 20px; }
   .pl-hero-cover { width: 140px; height: 140px; }
   .pl-hero-title { font-size: 1.6rem; }
 }
 
+/* ── Responsive — Mobile ────────────────────── */
 @media (max-width: 600px) {
-  .playlist-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  /* ── Playlist grid: 2 cột ── */
+  .playlist-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .pl-name  { font-size: 0.85rem; }
+  .pl-count { font-size: 0.75rem; }
+
+  /* ── Hero gọn lại ── */
+  .pl-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .pl-hero-cover { width: 100px; height: 100px; }
+  .pl-hero-title { font-size: 1.3rem; }
+  .pl-hero-meta  { font-size: 0.8rem; margin-bottom: 12px; }
+
+  .pl-hero-actions {
+    gap: 8px;
+  }
+
+  .pl-hero-actions .btn {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 0.8rem; margin-bottom: 12px; }
+
+  /* ── Song list ── */
   .pl-song-album { display: none; }
   .pl-song-drag  { display: none; }
-  .main-nav      { display: none; }
+
+  .pl-song-row { padding: 8px 6px; gap: 8px; }
+  .pl-song-title  { font-size: 0.85rem; }
+  .pl-song-artist { font-size: 0.76rem; }
+
+  /* Nút xóa luôn hiện trên mobile */
+  .pl-remove-btn { opacity: 1; }
+
+  /* ── Panel thêm bài ── */
+  .pl-add-section {
+    max-height: 360px;
+  }
+
+  .pl-add-row { padding: 6px; gap: 8px; }
+
+  /* ── Empty state ── */
+  .empty-state { padding: 40px 16px; }
+  .empty-icon  { font-size: 3rem; }
+  .empty-state h3 { font-size: 1rem; }
 }
