@@ -858,7 +858,108 @@ tbody tr:hover td { background: rgba(255,255,255,0.03); }
   gap: 6px;
   flex-wrap: wrap;
 }
+/* ═══════════════════════════════════════════════
+   MODAL / POPUP LAYOUT (Tạo, Sửa, Xóa Playlist)
+═══════════════════════════════════════════════ */
 
+/* Lớp phủ đen mờ toàn màn hình */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: none; /* Ẩn mặc định, chỉ hiện khi được JS gọi */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+/* Class để JS kích hoạt hiển thị Modal */
+.modal-overlay.open,
+.modal-overlay.active,
+.modal-overlay.show {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Khung nội dung hộp thoại */
+.modal {
+  background: var(--bg2, #1a1a1a);
+  width: 90%;
+  max-width: 420px;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--bg3, #222222);
+}
+
+/* Định dạng tiêu đề của hộp thoại */
+.modal h3, .modal h2 {
+  font-size: 1.25rem;
+  margin-bottom: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Nút Tắt [X] ở góc phải */
+.modal-close,
+.modal button[onclick*="close"], /* Bắt các nút có chữ close */
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: var(--gray, #b3b3b3);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover,
+.close-btn:hover {
+  color: var(--white, #fff);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Hiệu ứng mờ dần khi mở */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- Tối ưu hiển thị Modal riêng cho Điện Thoại --- */
+@media (max-width: 480px) {
+  .modal-overlay {
+    align-items: flex-end; /* Đẩy modal xuống sát cạnh dưới màn hình */
+    padding: 0;
+  }
+  
+  .modal {
+    max-width: 100% !important;
+    width: 100%;
+    border-radius: 24px 24px 0 0 !important; /* Bo tròn mạnh 2 góc trên */
+    padding: 24px 20px 40px; /* Tăng padding dưới để tránh cấn thanh vuốt iOS */
+    animation: modalSlideIn 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+  }
+
+  /* Hiệu ứng trượt từ dưới lên chuẩn app mobile */
+  @keyframes modalSlideIn {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+}
 /* ═══════════════════════════════════════════════
    RESPONSIVE — TABLET (≤768px)
 ═══════════════════════════════════════════════ */
@@ -1084,4 +1185,16 @@ tbody tr:hover td { background: rgba(255,255,255,0.03); }
   /* Ẩn control-buttons grid item (col 2 desktop không cần) */
   .player-inner > .control-buttons { display: none !important; }
   /* player-info col 1, player-controls col 2 (center), player-right col 3 */
+}
+/* --- SỬA LỖI CHỮ ĐEN TRÊN THANH HEADER --- */
+.logo, 
+.logo a, 
+.logo span {
+  color: #ffffff !important; /* Ép chữ logo thành màu trắng */
+}
+
+.user-badge, 
+.user-badge a, 
+.user-badge span {
+  color: #ffffff !important; /* Ép chữ tên user thành màu trắng */
 }
