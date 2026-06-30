@@ -1,9 +1,9 @@
 const express = require('express');
 const router  = express.Router();
 const { db }  = require('../database/db');
-const { requireLogin } = require('../middleware/auth');
 
-router.get('/', requireLogin, async (req, res) => {
+// Trang chủ: KHÔNG bắt buộc đăng nhập, ai cũng xem được danh sách nhạc
+router.get('/', async (req, res) => {
   const { q, sort } = req.query;
 
   let sql    = 'SELECT * FROM music';
@@ -21,7 +21,7 @@ router.get('/', requireLogin, async (req, res) => {
   const settings = settingsR[0] || {};
 
   res.render('home', {
-    user: req.session.user,
+    user: req.session.user || null, // null nếu chưa đăng nhập
     songs,
     settings,
     q:    q    || '',

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đăng nhập — Tâm Music</title>
+  <title>Đăng nhập — Music Player</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -22,17 +22,19 @@
       <% if (settings.logo) { %>
         <img src="<%= settings.logo %>" alt="Logo">
       <% } %>
-      <h1>🎵 Tâm Music</h1>
+      <h1>🎵 Music Player</h1>
     </div>
 
     <h2>Đăng nhập tài khoản</h2>
 
-    <!-- Thông báo lỗi -->
+    <!-- Thông báo (lỗi hoặc yêu cầu đăng nhập) -->
     <% if (error) { %>
       <div class="alert alert-error"><%= error %></div>
     <% } %>
 
     <form action="/login" method="POST">
+      <input type="hidden" name="returnTo" value="<%= typeof returnTo !== 'undefined' ? returnTo : '/' %>">
+
       <div class="form-group">
         <label for="username">Tên đăng nhập</label>
         <input type="text" id="username" name="username"
@@ -50,6 +52,7 @@
 
     <div class="auth-footer">
       Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
+      <br><a href="/" style="display:inline-block;margin-top:10px;color:var(--gray);font-size:0.85rem">← Tiếp tục nghe nhạc không cần đăng nhập</a>
     </div>
 
   </div>

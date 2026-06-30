@@ -13,31 +13,39 @@ router.get('/login', async (req, res) => {
   if (req.session?.user) {
     return req.session.user.role === 'admin' ? res.redirect('/admin') : res.redirect('/');
   }
-  res.render('login', { error: null, settings: await getSettings() });
+  res.render('login', {
+    error: req.query.message || null,
+    settings: await getSettings(),
+    returnTo: req.query.returnTo || '/'
+  });
 });
 
 // ── POST /login ─────────────────────────────────
 router.post('/login', async (req, res) => {
   if (req.session?.user) return res.redirect('/');
-  const { username, password } = req.body;
+  const { username, password, returnTo } = req.body;
   const settings = await getSettings();
+  const backTo   = returnTo && returnTo.startsWith('/') ? returnTo : '/';
 
   if (!username || !password)
-    return res.render('login', { error: 'Vui lòng nhập đầy đủ thông tin.', settings });
+    return res.render('login', { error: 'Vui lòng nhập đầy đủ thông tin.', settings, returnTo: backTo });
 
   const { rows } = await db.execute(
     'SELECT * FROM users WHERE username = ?', [username.trim()]
   );
   const user = rows[0];
   if (!user)
-    return res.render('login', { error: 'Tài khoản không tồn tại.', settings });
+    return res.render('login', { error: 'Tài khoản không tồn tại.', settings, returnTo: backTo });
 
   const match = await bcrypt.compare(password, user.password);
   if (!match)
-    return res.render('login', { error: 'Mật khẩu không đúng.', settings });
+    return res.render('login', { error: 'Mật khẩu không đúng.', settings, returnTo: backTo });
 
   req.session.user = { id: Number(user.id), username: user.username, role: user.role };
-  return user.role === 'admin' ? res.redirect('/admin') : res.redirect('/');
+
+  // Admin luôn vào /admin; guest quay lại trang trước đó (vd: /playlists)
+  if (user.role === 'admin') return res.redirect('/admin');
+  return res.redirect(backTo);
 });
 
 // ── GET /register ───────────────────────────────
@@ -64,10 +72,18 @@ router.post('/register', async (req, res) => {
   if (rows.length > 0) return fail('Username đã tồn tại.');
 
   const hashed = await bcrypt.hash(password, 10);
-  await db.execute(
-    'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-    [username.trim(), hashed, 'guest']
-  );
+  try {
+    await db.execute(
+      'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+      [username.trim(), hashed, 'guest']
+    );
+  } catch (err) {
+    // Trường hợp 2 người đăng ký trùng username cùng lúc (race condition)
+    if (err.message?.includes('UNIQUE constraint')) {
+      return fail('Username đã tồn tại.');
+    }
+    throw err;
+  }
 
   res.render('register', { error: null, success: 'Đăng ký thành công! Bạn có thể đăng nhập.', settings });
 });

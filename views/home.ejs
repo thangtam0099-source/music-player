@@ -2,8 +2,8 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tâm Music</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Player</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/playlist.css">
 </head>
@@ -20,7 +20,7 @@
       <% } else { %>
         <span>🎵</span>
       <% } %>
-      <span>Tâm Music</span>
+      <span>Music Player</span>
     </div>
 
     <!-- Nav -->
@@ -40,10 +40,14 @@
 
     <!-- User -->
     <div class="header-actions">
-      <div class="user-badge">
-        👤 <span><%= user.username %></span>
-      </div>
-      <a href="/logout" class="btn btn-secondary btn-sm">Đăng xuất</a>
+      <% if (user) { %>
+        <div class="user-badge">
+          👤 <span><%= user.username %></span>
+        </div>
+        <a href="/logout" class="btn btn-secondary btn-sm">Đăng xuất</a>
+      <% } else { %>
+        <a href="/login" class="btn btn-green btn-sm">Đăng nhập</a>
+      <% } %>
     </div>
 
   </div>
@@ -56,7 +60,11 @@
   <div class="banner-overlay">
     <div class="banner-text">
       <h2>🎵 Thưởng thức âm nhạc</h2>
-      <p>Chào mừng, <strong><%= user.username %></strong>!</p>
+      <% if (user) { %>
+        <p>Chào mừng, <strong><%= user.username %></strong>!</p>
+      <% } else { %>
+        <p>Nghe nhạc thoải mái — <a href="/login" style="color:var(--green)">đăng nhập</a> để tạo playlist riêng.</p>
+      <% } %>
     </div>
   </div>
 </div>
@@ -115,6 +123,10 @@
       <% if (song.album) { %>
         <div class="song-album" title="<%= song.album %>"><%= song.album %></div>
       <% } %>
+
+      <!-- Nút xem lời bài hát -->
+      <a href="/lyrics/<%= song.id %>" class="lyrics-link-btn"
+         onclick="event.stopPropagation()" title="Xem lời bài hát">📝 Lời</a>
     </div>
     <% }); %>
   </div>

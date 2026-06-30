@@ -2,10 +2,11 @@
 // Middleware kiểm tra đăng nhập
 // ───────────────────────────────────────────────
 
-/** Yêu cầu đăng nhập — nếu chưa thì về /login */
+/** Yêu cầu đăng nhập — nếu chưa thì về /login, kèm thông báo và link quay lại trang cũ */
 function requireLogin(req, res, next) {
   if (req.session && req.session.user) return next();
-  res.redirect('/login');
+  const returnTo = encodeURIComponent(req.originalUrl);
+  res.redirect(`/login?message=Vui lòng đăng nhập để sử dụng tính năng này&returnTo=${returnTo}`);
 }
 
 /** Yêu cầu quyền admin */
