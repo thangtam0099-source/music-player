@@ -1,56 +1,129 @@
-require('dotenv').config();
+# 🎵 Music Player
 
-const express = require('express');
-const session = require('express-session');
-const path    = require('path');
-const fs      = require('fs');
+Website nghe nhạc đơn giản, chạy local, không cần cloud hay Docker.
 
-const app  = express();
-const PORT = process.env.PORT || 3000;
+---
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public')));
+## Công nghệ sử dụng
 
-// Giữ /uploads cho file local cũ
-const uploadsDir = path.join(__dirname, 'uploads');
-if (fs.existsSync(uploadsDir)) app.use('/uploads', express.static(uploadsDir));
+| Thành phần | Công nghệ |
+|---|---|
+| Frontend | HTML5, CSS3, Vanilla JS |
+| Backend | Node.js + Express.js |
+| Database | SQLite (better-sqlite3) |
+| Template | EJS |
+| Upload | Multer |
+| Auth | Express Session |
+| Password | bcrypt |
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+---
 
-app.use(session({
-  secret:            process.env.SESSION_SECRET || 'music-player-secret',
-  resave:            false,
-  saveUninitialized: false,
-  cookie:            { maxAge: 7 * 24 * 60 * 60 * 1000 }
-}));
+## Cài đặt & Chạy
 
-// Khởi động: init DB trước, rồi mới start server
-const { initDB } = require('./database/db');
+### 1. Cài Node.js
+Tải tại https://nodejs.org (phiên bản 16+ trở lên)
 
-initDB()
-  .then(() => {
-    app.use('/',          require('./routes/auth'));
-    app.use('/',          require('./routes/guest'));
-    app.use('/admin',     require('./routes/admin'));
-    app.use('/playlists', require('./routes/playlist'));
+### 2. Clone / Giải nén project
+```bash
+cd music-player
+```
 
-    app.use((req, res) =>
-      res.status(404).send('<h2>404</h2><a href="/">Về trang chủ</a>')
-    );
+### 3. Cài dependencies
+```bash
+npm install
+```
 
-    app.use((err, req, res, next) => {
-      console.error('[Error]', err.message);
-      res.status(500).send('<h2>Lỗi server</h2><pre>' + err.message + '</pre>');
-    });
+### 4. Khởi động server
+```bash
+npm start
+```
 
-    app.listen(PORT, () => {
-      console.log(`\n🎵 Music Player: http://localhost:${PORT}`);
-      console.log(`   Admin:         http://localhost:${PORT}/admin\n`);
-    });
-  })
-  .catch(err => {
-    console.error('[FATAL] Không kết nối được DB:', err.message);
-    process.exit(1);
-  });
+Mở trình duyệt tại: **http://localhost:3000**
+
+---
+
+## Tài khoản mặc định
+
+### Admin
+| | |
+|---|---|
+| Username | `admin` |
+| Password | `admin123` |
+| URL | http://localhost:3000/admin |
+
+### Guest
+Tự đăng ký tại http://localhost:3000/register
+
+---
+
+## Cấu trúc thư mục
+
+```
+music-player/
+│
+├── server.js              # Entry point
+├── package.json
+│
+├── database/
+│   ├── db.js              # Khởi tạo SQLite
+│   └── database.db        # File DB (tự tạo khi chạy)
+│
+├── uploads/
+│   ├── music/             # File mp3
+│   └── images/            # Ảnh bìa, logo, banner...
+│
+├── public/
+│   ├── css/style.css      # Toàn bộ CSS
+│   └── js/player.js       # Logic phát nhạc
+│
+├── views/
+│   ├── login.ejs          # Trang đăng nhập
+│   ├── register.ejs       # Trang đăng ký
+│   ├── home.ejs           # Trang guest
+│   └── admin.ejs          # Trang admin
+│
+├── routes/
+│   ├── auth.js            # Login / Register / Logout
+│   ├── guest.js           # Trang chủ
+│   └── admin.js           # Toàn bộ admin
+│
+└── middleware/
+    ├── auth.js            # Kiểm tra quyền
+    └── upload.js          # Cấu hình Multer
+```
+
+---
+
+## Tính năng
+
+### 👥 Guest
+- Xem danh sách bài hát (ảnh, tên, ca sĩ, album)
+- Phát nhạc với HTML5 Audio Player
+- Play / Pause / Bài trước / Bài sau
+- Thanh tiến trình + thời lượng + âm lượng
+- Tìm kiếm theo tên bài / ca sĩ
+- Sắp xếp: Mới nhất / A→Z
+- Phím tắt: Space (play/pause), ← → (chuyển bài)
+
+### 🔧 Admin
+- Dashboard thống kê
+- Thêm / Sửa / Xóa bài hát (upload mp3 + ảnh bìa)
+- Cài đặt giao diện: Logo, Banner, Background trang chủ, Background Login
+
+---
+
+## Giới hạn upload
+
+| Loại file | Định dạng chấp nhận | Giới hạn |
+|---|---|---|
+| Nhạc | .mp3 | 20MB |
+| Ảnh | .jpg .jpeg .png .webp | 20MB |
+
+---
+
+## Lưu ý
+
+- Database tự tạo ở `database/database.db` khi chạy lần đầu
+- Tài khoản admin mặc định tự tạo nếu chưa có
+- Xóa bài hát sẽ xóa luôn file mp3 và ảnh trên disk
+- Dùng `npm run dev` để chạy với nodemon (tự reload khi sửa code)

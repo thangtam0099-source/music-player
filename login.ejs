@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tâm Music</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/playlist.css">
+</head>
+<body <% if (settings.background) { %> style="background-image: url('<%= settings.background %>'); background-size: cover; background-attachment: fixed;" <% } %>>
+
+<!-- ══ HEADER ══════════════════════════════════════ -->
+<header class="site-header">
+  <div class="header-inner">
+
+    <!-- Logo -->
+    <div class="logo">
+      <% if (settings.logo) { %>
+        <img src="<%= settings.logo %>" alt="Logo">
+      <% } else { %>
+        <span>🎵</span>
+      <% } %>
+      <span>Tâm Music</span>
+    </div>
+
+    <!-- Nav -->
+    <nav class="main-nav">
+      <a href="/" class="nav-pill active">🏠 Trang chủ</a>
+      <a href="/playlists" class="nav-pill">📋 Playlist</a>
+    </nav>
+
+    <!-- Search -->
+    <form class="search-bar" action="/" method="GET">
+      <% if (sort !== 'newest') { %>
+        <input type="hidden" name="sort" value="<%= sort %>">
+      <% } %>
+      <input type="text" name="q" value="<%= q %>" placeholder="Tìm bài hát, ca sĩ...">
+      <button type="submit">Tìm</button>
+    </form>
+
+    <!-- User -->
+    <div class="header-actions">
+      <div class="user-badge">
+        👤 <span><%= user.username %></span>
+      </div>
+      <a href="/logout" class="btn btn-secondary btn-sm">Đăng xuất</a>
+    </div>
+
+  </div>
+</header>
+
+<!-- ══ BANNER ══════════════════════════════════════ -->
+<% if (settings.banner) { %>
+<div class="banner">
+  <img src="<%= settings.banner %>" alt="Banner">
+  <div class="banner-overlay">
+    <div class="banner-text">
+      <h2>🎵 Thưởng thức âm nhạc</h2>
+      <p>Chào mừng, <strong><%= user.username %></strong>!</p>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- ══ MAIN CONTENT ═════════════════════════════════ -->
+<main class="main-content">
+  <div class="section-header">
+    <h2>
+      <% if (q) { %>
+        Kết quả: "<%= q %>" (<%= songs.length %> bài)
+      <% } else { %>
+        🎶 Tất cả bài hát (<%= songs.length %>)
+      <% } %>
+    </h2>
+
+    <!-- Sort -->
+    <div class="sort-bar">
+      <a href="/?<%= q ? 'q=' + encodeURIComponent(q) + '&' : '' %>sort=newest"
+         class="sort-btn <%= sort === 'newest' ? 'active' : '' %>">Mới nhất</a>
+      <a href="/?<%= q ? 'q=' + encodeURIComponent(q) + '&' : '' %>sort=az"
+         class="sort-btn <%= sort === 'az' ? 'active' : '' %>">A → Z</a>
+    </div>
+  </div>
+
+  <!-- Song grid -->
+  <div class="song-grid" id="songGrid">
+    <% if (songs.length === 0) { %>
+      <div class="no-songs">
+        <div class="icon">🎵</div>
+        <p><% if (q) { %>Không tìm thấy bài hát nào.<% } else { %>Chưa có bài hát nào.<% } %></p>
+        <% if (q) { %><a href="/">← Xem tất cả</a><% } %>
+      </div>
+    <% } %>
+
+    <% songs.forEach(function(song, idx) { %>
+    <div class="song-card" data-idx="<%= idx %>" onclick="playSong(<%= idx %>)">
+
+      <!-- Nút thêm vào playlist -->
+      <button class="add-pl-btn"
+              title="Thêm vào playlist"
+              onclick="event.stopPropagation(); togglePlaylistPopup(this, <%= song.id %>, '<%= song.title.replace(/'/g, "\\'") %>')">＋</button>
+
+      <% if (song.image) { %>
+        <img class="song-thumb" src="<%= song.image %>" alt="<%= song.title %>">
+      <% } else { %>
+        <div class="song-thumb-placeholder">🎵</div>
+      <% } %>
+
+      <div class="song-play-icon">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+
+      <div class="song-title" title="<%= song.title %>"><%= song.title %></div>
+      <div class="song-artist" title="<%= song.artist %>"><%= song.artist %></div>
+      <% if (song.album) { %>
+        <div class="song-album" title="<%= song.album %>"><%= song.album %></div>
+      <% } %>
+    </div>
+    <% }); %>
+  </div>
+</main>
+
+<!-- ══ PLAYER BAR ══════════════════════════════════ -->
+<div class="player-bar" id="playerBar">
+  <div class="player-inner">
+
+    <!-- [1] Info -->
+    <div class="player-info">
+      <div id="playerCoverWrap"></div>
+      <div class="player-meta">
+        <div class="title"  id="playerTitle">—</div>
+        <div class="artist" id="playerArtist">—</div>
+      </div>
+    </div>
+
+    <!-- [2] Control buttons (desktop: trong player-controls / mobile: grid col 2 row 1) -->
+    <div class="control-buttons">
+      <button class="ctrl-btn" onclick="prevSong()" title="Bài trước">
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+      </button>
+      <button class="ctrl-btn play-pause" id="playPauseBtn" onclick="togglePlay()">
+        <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="ctrl-btn" onclick="nextSong()" title="Bài tiếp">
+        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 4V8z"/><path d="M16 6h2v12h-2z"/></svg>
+      </button>
+    </div>
+
+    <!-- [3] Player controls: desktop gộp buttons+progress, mobile chỉ có progress -->
+    <div class="player-controls">
+      <!-- Buttons này hiện trên desktop, ẩn trên mobile (đã có ở [2]) -->
+      <div class="control-buttons">
+        <button class="ctrl-btn" onclick="prevSong()">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+        <button class="ctrl-btn play-pause" onclick="togglePlay()">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="ctrl-btn" onclick="nextSong()">
+          <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 4V8z"/><path d="M16 6h2v12h-2z"/></svg>
+        </button>
+      </div>
+      <div class="progress-area">
+        <span class="time-label" id="currentTime">0:00</span>
+        <input type="range" id="progressBar" min="0" max="100" value="0" oninput="seekTo(this.value)">
+        <span class="time-label right" id="totalTime">0:00</span>
+      </div>
+    </div>
+
+    <!-- [4] Volume (ẩn mobile) -->
+    <div class="player-right">
+      <div class="volume-area">
+        <span class="vol-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        </span>
+        <input type="range" id="volumeBar" min="0" max="1" step="0.01" value="1" oninput="setVolume(this.value)">
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- ══ HIDDEN AUDIO ════════════════════════════════ -->
+<audio id="audioPlayer" preload="metadata"></audio>
+
+<!-- ══ SONG DATA ═══════════════════════════════════ -->
+<script>
+// Dữ liệu bài hát từ server
+const SONGS = <%- JSON.stringify(songs.map(s => ({
+  id:     s.id,
+  title:  s.title,
+  artist: s.artist,
+  album:  s.album || '',
+  image:  s.image || '',
+  src:    s.music_file
+}))) %>;
+</script>
+<script src="/js/player.js"></script>
+<script src="/js/playlist.js"></script>
+
+</body>
+</html>
